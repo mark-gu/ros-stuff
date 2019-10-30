@@ -1,0 +1,33 @@
+ARG ROS_VERSION=melodic
+ARG UBUNTU_VERSION=bionic
+FROM amd64/ros:${ROS_VERSION}-ros-base-${UBUNTU_VERSION}
+
+ENV PATH="/root/.local/bin:${PATH}"
+
+# Copy qemu from the host machine
+COPY qemu-aarch64-static /usr/bin
+
+RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
+
+# Installed for convenience
+RUN apt-get update && apt-get install -y vim
+
+# Install Python and colcon
+RUN apt-get update && apt-get install -y \
+      python \
+      python3-apt \
+      curl \
+    && curl -O https://bootstrap.pypa.io/get-pip.py \
+    && python3 get-pip.py \
+    && python2 get-pip.py \
+    && python3 -m pip install -U colcon-ros-bundle
+
+# Add custom rosdep rules
+RUN echo "yaml https://s3-us-west-2.amazonaws.com/rosdep/python.yaml" > /etc/ros/rosdep/sources.list.d/18-aws-python.list \
+    && rosdep update
+
+# Add custom pip rules
+COPY custom-pip-rules.conf /etc/pip.conf
+
+# Add custom apt sources for bundling
+COPY bionic-sources-arm64.yaml /opt/cross/apt-sources.yaml
