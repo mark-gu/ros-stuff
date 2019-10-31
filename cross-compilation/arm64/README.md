@@ -19,6 +19,7 @@
 
     ```bash
     cd /opt/robomaker/cross-compilation-dockerfile/
+    sudo chmod +x bin/build_image_arm64.bash
     sudo bin/build_image_arm64.bash
 
     cd ~/environment/[ENVIRONMENT_NAME]/robot_ws
