@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>spinner_robot</name>
+  <version>1.0.0</version>
+  <description>A ROS application that makes robots spin.</description>
+  <license>MIT</license>
+  <author email="name@email.com">Mark Gu</author>
+  <maintainer email="name@email.com">Mark Gu</maintainer>
+  <buildtool_depend>catkin</buildtool_depend>
+  <depend>rospy</depend>
+  <depend>std_msgs</depend>
+  <depend>sensor_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>rospy_message_converter</depend>
+  <depend>cloudwatch_logger</depend>
+
+  <build_depend>message_generation</build_depend>
+  <build_export_depend>message_runtime</build_export_depend>
+  <exec_depend>message_runtime</exec_depend>
+</package>
