@@ -1,13 +1,16 @@
 <launch>
   <arg name="aws_region" default="$(optenv APP_TARGET_REGION us-west-2)" />
+  <arg name="hostname" default="$(optenv HOSTNAME Unknown)" />
   <arg name="output" default="log" />
 
+<!--
   <include file="$(find spinner_robot)/launch/aws_cloudwatch_logger.launch">
     <arg name="aws_region" value="$(arg aws_region)" />
     <arg name="hostname" value="$(arg hostname)" />
     <arg name="output" value="$(arg output)" />
     <arg name="config_file" value="$(find spinner_robot)/config/aws_cloudwatch_logs_config.yml" />
   </include>
+-->
 
   <node name="spin" pkg="spinner_robot" type="spin" output="$(arg output)">
     <rosparam command="delete" param="" />

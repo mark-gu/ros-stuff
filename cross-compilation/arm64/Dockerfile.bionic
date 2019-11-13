@@ -1,5 +1,7 @@
 ARG ROS_VERSION=melodic
 ARG UBUNTU_VERSION=bionic
+
+FROM balenalib/jetson-nano-ubuntu-python:latest
 FROM arm64v8/ros:${ROS_VERSION}-ros-base-${UBUNTU_VERSION}
 
 ENV PATH="/root/.local/bin:${PATH}"
@@ -24,6 +26,7 @@ RUN apt-get update && apt-get install -y \
 
 # Add custom rosdep rules
 RUN echo "yaml https://s3-us-west-2.amazonaws.com/rosdep/python.yaml" > /etc/ros/rosdep/sources.list.d/18-aws-python.list \
+    && echo "yaml https://s3-us-west-2.amazonaws.com/rosdep/base.yaml\nyaml https://nvidia-jetbot-sources.s3-us-west-2.amazonaws.com/nvidia.yaml" > /etc/ros/rosdep/sources.list.d/19-aws-sdk.list \
     && rosdep update
 
 # Add custom pip rules
