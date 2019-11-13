@@ -1,25 +1,28 @@
 #!/usr/bin/env python
 import rospy
-from jetbot import Robot
-
+from std_msgs.msg import String
 
 class Spinner():
   def __init__(self):
-    self.robot = Robot()
+    self._cmd_pub = rospy.Publisher('/jetbot_motors/cmd_str', String, queue_size=1)
 
-  def spin_forever(self, angular_speed = 0.3):
-    self.robot.right(speed = angular_speed)
+  def spin(self, angular_speed = 0.3):
+    self._cmd_pub.publish('left')
+
+  def stop(self):
+    self._cmd_pub.publish('stop')
 
 
 def main():
   rospy.init_node('spin')
   params = rospy.get_param("~params", {})
 
+  spinner = Spinner()
   try:
-      spinner = Spinner()
-      spinner.spin_forever(params.get("angular_speed", 0.3))
+    spinner.spin(params.get("angular_speed", 0.3))
+    rospy.spin()
   except rospy.ROSInterruptException:
-      pass
+    spinner.stop()
 
 
 if __name__ == "__main__":
