@@ -1,0 +1,69 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+
+Parameters:
+  AppsBucket:
+    Type: String
+
+  CertGeneratorKey:
+    Type: String
+    Default: utils/cert_generator.zip
+
+
+Resources:
+  RobotFilesGeneratorRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: CertGeneratorPermissions
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - iot:DescribeEndpoint
+                  - iot:CreateKeysAndCertificate
+                  - iot:DeleteCertificate
+                  - iot:UpdateCertificate
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - s3:*
+                Resource:
+                  - !Sub arn:aws:s3:::${AppsBucket}
+                  - !Sub arn:aws:s3:::${AppsBucket}/*
+
+  RobotFilesGenerator:
+    Type: AWS::Lambda::Function
+    Properties:
+      Description: This function generates the certificate, keys, and config files needed by robots.
+      Environment:
+        Variables:
+          BucketName: !Ref AppsBucket
+          KeyPrefix: robots/
+      Code:
+        S3Bucket: !Ref AppsBucket
+        S3Key: !Ref CertGeneratorKey
+      Handler: index.lambda_handler
+      MemorySize: 128
+      Role: !GetAtt RobotFilesGeneratorRole.Arn
+      Runtime: python2.7
+      Timeout: 300
+
+
+Outputs:
+  RobotFilesGeneratorArn:
+    Value: !GetAtt RobotFilesGenerator.Arn

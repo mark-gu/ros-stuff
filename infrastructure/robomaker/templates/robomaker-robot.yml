@@ -1,0 +1,172 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+
+Parameters:
+  Name:
+    Type: String
+    AllowedPattern: ^[a-zA-Z0-9\-_]+$
+    MinLength: 1
+    MaxLength: 255
+
+  Architecture:
+    Type: String
+    AllowedValues:
+      - X86-64
+      - ARM64
+      - ARMHF
+    Default: X86-64
+
+  FleetArn:
+    Type: String
+
+  RoleArn:
+    Type: String
+
+  RobotFilesGeneratorArn:
+    Type: String
+
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Robot Configuration
+        Parameters:
+          - Name
+          - Architecture
+          - FleetArn
+      - Label:
+          default: Other Configuration
+        Parameters:
+          - RoleArn
+          - RobotFilesGeneratorArn
+    ParameterLabels:
+      Name:
+        default: Name
+      Architecture:
+        default: Architecture
+      FleetArn:
+        default: Fleet ARN
+      RoleArn:
+        default: Role ARN
+      RobotFilesGeneratorArn:
+        default: Robot Files Generator Lambda ARN
+
+
+Mappings:
+  ArchitectureMap:
+    X86-64:
+      Arch: X86_64
+    ARM64:
+      Arch: ARM64
+    ARMHF:
+      Arch: ARMHF
+
+
+Resources:
+  Thing:
+    Type: AWS::IoT::Thing
+    Properties:
+      ThingName: !Sub ${Name}-Thing
+
+  Files:
+    Type: Custom::RobotFiles
+    Properties:
+      ServiceToken: !Ref RobotFilesGeneratorArn
+      RobotName: !Ref Name
+      ThingArn: !Sub arn:aws:iot:${AWS::Region}:${AWS::AccountId}:thing/${Thing}
+
+  Policy:
+    Type: AWS::IoT::Policy
+    Properties:
+      PolicyName: !Sub ${Name}-Policy
+      # See https://docs.aws.amazon.com/greengrass/latest/developerguide/gg-sec.html#gg-config-sec-min-iot-policy
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - iot:Connect
+            Resource: '*'
+          - Effect: Allow
+            Action:
+              - iot:Publish
+              - iot:Receive
+              - iot:Subscribe
+            Resource: '*'
+          - Effect: Allow
+            Action:
+              - iot:DeleteThingShadow
+              - iot:GetThingShadow
+              - iot:UpdateThingShadow
+            Resource: '*'
+          - Effect: Allow
+            Action:
+              - greengrass:*
+            Resource: '*'
+
+  AttachPolicyToCert:
+    Type: AWS::IoT::PolicyPrincipalAttachment
+    Properties:
+      PolicyName: !Ref Policy
+      Principal: !GetAtt Files.CertificateArn
+
+  AttachCertToThing:
+    Type: AWS::IoT::ThingPrincipalAttachment
+    Properties:
+      Principal: !GetAtt Files.CertificateArn
+      ThingName: !Ref Thing
+
+  CoreDefinition:
+    Type: AWS::Greengrass::CoreDefinition
+    Properties:
+      Name: !Sub ${Name}-CoreDef
+
+  CoreDefinitionVersion:
+    Type: AWS::Greengrass::CoreDefinitionVersion
+    Properties:
+      CoreDefinitionId: !Ref CoreDefinition
+      Cores:
+        - Id: !Sub ${Name}-Core-1
+          CertificateArn: !GetAtt Files.CertificateArn
+          ThingArn: !Sub arn:aws:iot:${AWS::Region}:${AWS::AccountId}:thing/${Thing}
+          SyncShadow: true
+
+  GreengrassGroup:
+    Type: AWS::Greengrass::Group
+    Properties:
+      Name: !Sub ${Name}-Group
+      RoleArn: !Ref RoleArn
+      InitialVersion:
+        CoreDefinitionVersionArn: !Ref CoreDefinitionVersion
+
+  Robot:
+    Type: AWS::RoboMaker::Robot
+    Properties:
+      Fleet: !Ref FleetArn
+      Name: !Ref Name
+      Architecture: !FindInMap [ ArchitectureMap, !Ref Architecture, Arch ]
+      GreengrassGroupId: !Ref GreengrassGroup
+
+
+Outputs:
+  RobotName:
+    Value: !Ref Name
+
+  RobotThingArn:
+    Value: !Sub arn:aws:iot:${AWS::Region}:${AWS::AccountId}:thing/${Thing}
+
+  DownloadAmazonRootCA1:
+    Value: https://www.amazontrust.com/repository/AmazonRootCA1.pem
+
+  DownloadAwsIotGreengrassCoreSoftware:
+    Value: https://docs.aws.amazon.com/greengrass/latest/developerguide/what-is-gg.html?icmpid=docs_gg_console#gg-downloads
+
+  DownloadRobotCertificate:
+    Value: !GetAtt Files.Certificate
+
+  DownloadRobotPrivateKey:
+    Value: !GetAtt Files.PrivateKey
+
+  DownloadRobotConfig:
+    Value: !GetAtt Files.Config

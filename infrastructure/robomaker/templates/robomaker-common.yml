@@ -1,0 +1,84 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+
+Resources:
+  AppsBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+
+  GreengrassGroupRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+                - greengrass.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: AllowDeployments
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:Get*
+                  - s3:List*
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - robomaker:UpdateRobotDeployment
+                Resource: '*'
+        - PolicyName: AllowLogging
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - cloudwatch:PutMetricData
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:DescribeLogStreams
+                  - logs:PutLogEvents
+                Resource: '*'
+        - PolicyName: AllowKinesis
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - kinesis:AddTagsToStream
+                  - kinesis:CreateStream
+                  - kinesis:DescribeStream
+                  - kinesis:GetRecords
+                  - kinesis:GetShardIterator
+                  - kinesis:ListShards
+                  - kinesis:ListStreams
+                  - kinesis:ListTagsForStream
+                  - kinesis:PutRecord
+                  - kinesis:PutRecords
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - kinesisvideo:CreateStream
+                  - kinesisvideo:DescribeStream
+                  - kinesisvideo:GetDataEndpoint
+                  - kinesisvideo:PutMedia
+                  - kinesisvideo:TagStream
+                Resource: '*'
+
+
+Outputs:
+  AppsBucketName:
+    Value: !Ref AppsBucket
+
+  GreengrassGroupRoleArn:
+    Value: !GetAtt GreengrassGroupRole.Arn

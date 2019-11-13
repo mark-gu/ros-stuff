@@ -1,0 +1,18 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+
+Parameters:
+  FleetName:
+    Type: String
+
+
+Resources:
+  Fleet:
+    Type: AWS::RoboMaker::Fleet
+    Properties:
+      Name: !Ref FleetName
+
+
+Outputs:
+  FleetArn:
+    Value: !GetAtt Fleet.Arn
